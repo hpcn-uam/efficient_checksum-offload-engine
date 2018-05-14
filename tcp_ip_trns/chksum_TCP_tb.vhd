@@ -42,7 +42,7 @@ architecture Behavioral of chksum_TCP_tb is
        return (Sum_1Com);
     end calc_c1Add;
     
-    component cksum_528_r01 is    
+    component cksum_528_r02 is    
         Port ( 
                SysClk_in : in STD_LOGIC;
                PktData : in STD_LOGIC_VECTOR (511 downto 0);
@@ -65,7 +65,23 @@ architecture Behavioral of chksum_TCP_tb is
                  pre_cks : in STD_LOGIC_VECTOR (15 downto 0);
                  ChksumFinal : out STD_LOGIC_VECTOR (15 downto 0));
       end component;
+      
+      component cksum_528_simple is
+            Port ( 
+                   SysClk_in : in STD_LOGIC;
+                   PktData : in STD_LOGIC_VECTOR (511 downto 0);
+                   pre_cks : in STD_LOGIC_VECTOR (15 downto 0);
+                   ChksumFinal : out STD_LOGIC_VECTOR (15 downto 0));
+    end component;
     
+    component cksum_528_bin32 is
+          Port ( 
+                 SysClk_in : in STD_LOGIC;
+                 PktData : in STD_LOGIC_VECTOR (511 downto 0);
+                 pre_cks : in STD_LOGIC_VECTOR (15 downto 0);
+                 ChksumFinal : out STD_LOGIC_VECTOR (15 downto 0));
+   end component;
+  
    signal clk : std_logic := '0';
    constant clk_period : time := 10 ns;
    signal ChksumHW, ChksumHW2, ChksumGold : STD_LOGIC_VECTOR (15 downto 0);
@@ -79,13 +95,15 @@ architecture Behavioral of chksum_TCP_tb is
    
  BEGIN
  
-     --uut1: cksum_528_r01 PORT MAP (SysClk_in => clk,
-     uut1: cksum_528_ter01 PORT MAP (SysClk_in => clk, 
+     uut1: cksum_528_r02 PORT MAP (SysClk_in => clk,
+     --uut1: cksum_528_ter01 PORT MAP (SysClk_in => clk, 
                               PktData => PktData,
                               pre_cks => pre_cks, 
                               ChksumFinal => ChksumHW);    
                                
-       uut2: cksum_528_bin01 PORT MAP (SysClk_in => clk, 
+       --uut2: cksum_528_simple PORT MAP (SysClk_in => clk, 
+       --uut2: cksum_528_bin01 PORT MAP (SysClk_in => clk, 
+       uut2: cksum_528_bin32 PORT MAP (SysClk_in => clk,  
                             PktData => PktData,
                             pre_cks => pre_cks, 
                             ChksumFinal => ChksumHW2);                                                   
@@ -112,11 +130,11 @@ wait for clk_period/4;
 uniform(seed1, seed2, rand);
 
 for i in 1 to MAX_TEST loop
-  
         wait for clk_period;
         for k in 0 to 31 loop
             uniform(seed1, seed2, rand);   -- generate random number
-            rand_num := integer(rand*(2**16-1));  -- rescale to 0..1000, convert integer part 
+--          rand_num := integer(rand*(2**16-1));  -- rescale to 0..1000, convert integer part 
+            rand_num := 65535;
             PktData (k*16+15 downto k*16) <= std_logic_vector(to_unsigned(rand_num, 16));
         end loop;
         uniform(seed1, seed2, rand);   -- generate random number
@@ -125,8 +143,8 @@ for i in 1 to MAX_TEST loop
         wait for clk_period;
         ChksumGold <= std_logic_vector(calc_c1Add (PktData, pre_cks));
         wait for clk_period;
-        --assert ChksumHW = ChksumGold report "No equal values." severity warning;
-        assert ChksumHW = ChksumGold report "No equal values." severity failure;
+        assert ChksumHW = ChksumGold report "No equal values." severity warning;
+        --assert ChksumHW = ChksumGold report "No equal values." severity failure;
 
 end loop;
 

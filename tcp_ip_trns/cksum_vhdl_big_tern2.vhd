@@ -12,18 +12,18 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity cksum_528_ter01 is
+entity cksum_528_ter02 is
     Port ( 
            SysClk_in : in STD_LOGIC;
            PktData : in STD_LOGIC_VECTOR (511 downto 0);
 		   pre_cks : in STD_LOGIC_VECTOR (15 downto 0);
            ChksumFinal : out STD_LOGIC_VECTOR (15 downto 0));
-end cksum_528_ter01;
+end cksum_528_ter02;
 
 
 --------------
 -- Ternary adders
-architecture ternary_tree of cksum_528_ter01 is
+architecture ternary_tree of cksum_528_ter02 is
 
   signal sys_clk : STD_LOGIC := '0';  
   
@@ -36,7 +36,7 @@ architecture ternary_tree of cksum_528_ter01 is
   type chk_sum_L2_type is array (0 to 2) of unsigned (19 downto 0);
   signal sum_L2 : chk_sum_L2_type;
   
-  signal sum_L3 : unsigned (20 downto 0); --3x-3x3 = 27. 5 bits
+  signal sum_L3 : unsigned (21 downto 0);  --3x3x3 = 27 elem. Add one more 4 regularity
   
   signal sum_L4 : unsigned (21 downto 0);  
 
@@ -75,9 +75,17 @@ begin
         sum_L2(i) <= ("00" & sum_L1(3*i+2)) + sum_L1(3*i+1) + sum_L1(3*i);
   end generate;
 
-  L_3: sum_L3 <= ('0' & sum_L2(2)) + sum_L2(1) + sum_L2(0);
+
+
+  L_3: sum_L3 <= ("00" & sum_L2(2)) + sum_L2(1) + sum_L2(0);
   
-  L_4: sum_L4 <= ('0' & sum_L3) + sum_L1(10) + sum_L1(9);
+  L_4: sum_L4 <= (sum_L3) + sum_L1(10) + sum_L1(9);
+  
+--  sum_L2(3) <= ("00" & sum_L1(10)) + sum_L1(9);
+  
+--  L_3: sum_L3 <= ('0' & sum_L2(2)) + sum_L2(1) + sum_L2(0);
+  
+--  L_4: sum_L4 <= ('0' & sum_L3) + sum_L2(3);
   
   sumPrev <=  ('0' & sum_L4(15 downto 0)) + sum_L4(21 downto 16);
   

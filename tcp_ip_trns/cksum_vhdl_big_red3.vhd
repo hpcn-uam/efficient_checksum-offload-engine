@@ -9,18 +9,18 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity cksum_528_r01 is
+entity cksum_528_r03 is
     Port ( 
            SysClk_in : in STD_LOGIC;
            PktData : in STD_LOGIC_VECTOR (511 downto 0);
 		   pre_cks : in STD_LOGIC_VECTOR (15 downto 0);
            ChksumFinal : out STD_LOGIC_VECTOR (15 downto 0));
-end cksum_528_r01;
+end cksum_528_r03;
 
 
 --------------
 -- Ternary adders
-architecture reducer_tree of cksum_528_r01 is
+architecture reducer_tree of cksum_528_r03 is
 
 component reducer_7to3 is port (
   x6, x5,x4, x3, x2, x1, x0: in std_logic;
@@ -47,11 +47,12 @@ end component;
   type chk_sum_L3_type is array (0 to 2) of unsigned (15 downto 0);
   signal sum_L3 : chk_sum_L3_type;
   
-
-  signal sum_L4 : unsigned (17 downto 0);
-
-  signal sumPrev : unsigned (16 downto 0);
+  type chk_sum_L4_type is array (0 to 1) of unsigned (15 downto 0);
+  signal sum_L4 : chk_sum_L4_type;
   
+  type chk_sum_L5_type is array (0 to 1) of unsigned (16 downto 0);
+  signal sum_L5 : chk_sum_L5_type;
+
   signal sumFinal : unsigned (16 downto 0);
   
   signal pre_cks_reg : unsigned (15 downto 0);
@@ -115,11 +116,18 @@ begin
                        s2 => sum_L3(2)((i+2) mod 16), s1 => sum_L3(1)((i+1) mod 16), s0 => sum_L3(0)(i) );                       
   end generate;
   
-  sum_L4 <= ("00" & sum_L3(2)) + sum_L3(1) + sum_L3(0);
+  L_4: for i in 0 to 15 generate 
+      sum_L4(0)(i) <= sum_L3(2)(i) xor sum_L3(1)(i) xor sum_L3(0)(i);
+      sum_L4(1)((i+1) mod 16) <= (sum_L3(2)(i) and sum_L3(1)(i)) or  (sum_L3(2)(i) and sum_L3(0)(i)) or (sum_L3(1)(i) and sum_L3(0)(i)) ;
+  end generate;
+
+--   sum_L4 <= ("00" & sum_L3(2)) + sum_L3(1) + sum_L3(0);
    
-  sumPrev <=  ('0' & sum_L4(15 downto 0)) + sum_L4(17 downto 16);
-  
-  sumFinal <=  ('0' & sumPrev(15 downto 0)) + sumPrev(16 downto 16);
+ 
+  sum_L5(0) <= ('0' & sum_L4(1)) + sum_L4(0);  
+  sum_L5(1) <= ('0' & sum_L4(1)) + sum_L4(0) + 1;  
+
+  sumFinal <= sum_L5(0) when (sum_L5(0)(16) = '0') else  sum_L5(1);
 
  
 end reducer_tree;
