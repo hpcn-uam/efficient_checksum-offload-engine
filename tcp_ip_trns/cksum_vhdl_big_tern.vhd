@@ -13,6 +13,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity cksum_528_ter01 is
+    generic (
+          REGISTER_INPUT_DATA : integer :=1
+    );
     Port ( 
            SysClk_in : in STD_LOGIC;
            PktData : in STD_LOGIC_VECTOR (511 downto 0);
@@ -50,18 +53,35 @@ begin
 
     sys_clk <= SysClk_in;  
      
-    --Input Registers
-    inp_reg: process (sys_clk)
+    register_inputs : if (REGISTER_INPUT_DATA = 1) generate
     begin
-      if (sys_clk'event and sys_clk='1') then 
-        for i in 0 to 31 loop --
+      --Input Registers
+      inp_reg: process (sys_clk)
+      begin
+        if (sys_clk'event and sys_clk='1') then 
+          for i in 0 to 31 loop --
             PktData_reg(i)(15 downto 8) <= unsigned(PktData(i*16 + 7 downto i*16));
             PktData_reg(i)(7 downto 0) <= unsigned(PktData(i*16 + 15 downto i*16+8));  
+          end loop;
+          pre_cks_REG <= unsigned(pre_cks);
+          ChksumFinal <= STD_LOGIC_VECTOR(sumFinal(15 downto 0));
+        end if;
+      end process;
+    end generate;
+
+    no_register_inputs : if (REGISTER_INPUT_DATA = 0) generate
+    begin
+      --Input Registers
+      inp_no_reg: process (PktData)
+      begin
+        for i in 0 to 31 loop --
+          PktData_reg(i)(15 downto 8) <= unsigned(PktData(i*16 + 7 downto i*16));
+          PktData_reg(i)(7 downto 0) <= unsigned(PktData(i*16 + 15 downto i*16+8));  
         end loop;
-		pre_cks_REG <= unsigned(pre_cks);
-        ChksumFinal <= STD_LOGIC_VECTOR(sumFinal(15 downto 0));
-      end if;
-    end process;
+      end process;
+      pre_cks_REG <= unsigned(pre_cks);
+      ChksumFinal <= STD_LOGIC_VECTOR(sumFinal(15 downto 0));
+    end generate;
 
 
   -- First level of reduction

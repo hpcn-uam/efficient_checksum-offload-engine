@@ -22,12 +22,12 @@ end cksum_528_r04;
 -- Ternary adders
 architecture reducer_tree of cksum_528_r04 is
 
-component reducer_7to3 is port (
+component reducer_7to3_i is port (
   x6, x5,x4, x3, x2, x1, x0: in std_logic;
   s2, s1, s0: out std_logic);
 end component;
 
-component reducer_6to3 is port (
+component reducer_6to3_i is port (
   x5,x4, x3, x2, x1, x0: in std_logic;
   s2, s1, s0: out std_logic);
 end component;
@@ -78,40 +78,40 @@ begin
 
   -- First level of reduction
   L_1: for i in 0 to 15 generate 
-    reduc1: reducer_7to3 port map( x6 => PktData_reg(6)(i), x5 => PktData_reg(5)(i), x4 => PktData_reg(4)(i),
+    reduc1: reducer_7to3_i port map( x6 => PktData_reg(6)(i), x5 => PktData_reg(5)(i), x4 => PktData_reg(4)(i),
                        x3 => PktData_reg(3)(i), x2 => PktData_reg(2)(i),  x1 => PktData_reg(1)(i), x0 => PktData_reg(0)(i),
                        s2 => sum_L1(2)((i+2) mod 16), s1 => sum_L1(1)((i+1) mod 16), s0 => sum_L1(0)(i) );
                        
-    reduc2: reducer_7to3 port map( x6 => PktData_reg(13)(i), x5 => PktData_reg(12)(i), x4 => PktData_reg(11)(i),
+    reduc2: reducer_7to3_i port map( x6 => PktData_reg(13)(i), x5 => PktData_reg(12)(i), x4 => PktData_reg(11)(i),
                       x3 => PktData_reg(10)(i), x2 => PktData_reg(9)(i),  x1 => PktData_reg(8)(i), x0 => PktData_reg(7)(i),
                       s2 => sum_L1(5)((i+2) mod 16), s1 => sum_L1(4)((i+1) mod 16), s0 => sum_L1(3)(i) );   
 
-    reduc3: reducer_7to3 port map( x6 => PktData_reg(20)(i), x5 => PktData_reg(19)(i), x4 => PktData_reg(18)(i),
+    reduc3: reducer_7to3_i port map( x6 => PktData_reg(20)(i), x5 => PktData_reg(19)(i), x4 => PktData_reg(18)(i),
                        x3 => PktData_reg(17)(i), x2 => PktData_reg(16)(i),  x1 => PktData_reg(15)(i), x0 => PktData_reg(14)(i),
                        s2 => sum_L1(8)((i+2) mod 16), s1 => sum_L1(7)((i+1) mod 16), s0 => sum_L1(6)(i) );
                        
-    reduc4: reducer_6to3 port map( x5 => PktData_reg(26)(i), x4 => PktData_reg(25)(i), x3 => PktData_reg(24)(i),
+    reduc4: reducer_6to3_i port map( x5 => PktData_reg(26)(i), x4 => PktData_reg(25)(i), x3 => PktData_reg(24)(i),
                           x2 => PktData_reg(23)(i),  x1 => PktData_reg(22)(i), x0 => PktData_reg(21)(i),
                           s2 => sum_L1(11)((i+2) mod 16), s1 => sum_L1(10)((i+1) mod 16), s0 => sum_L1(9)(i) ); 
                                                       
-    reduc5: reducer_6to3 port map( x5 => pre_cks_REG(i), x4 => PktData_reg(31)(i), x3 => PktData_reg(30)(i),
+    reduc5: reducer_6to3_i port map( x5 => pre_cks_REG(i), x4 => PktData_reg(31)(i), x3 => PktData_reg(30)(i),
                           x2 => PktData_reg(29)(i),  x1 => PktData_reg(28)(i), x0 => PktData_reg(27)(i),
                           s2 => sum_L1(14)((i+2) mod 16), s1 => sum_L1(13)((i+1) mod 16), s0 => sum_L1(12)(i) ); 	
 					  			  
   end generate;
 
   L_2: for i in 0 to 15 generate 
-    reduc1: reducer_7to3 port map( x6 => sum_L1(6)(i), x5 => sum_L1(5)(i), x4 => sum_L1(4)(i),
+    reduc1: reducer_7to3_i port map( x6 => sum_L1(6)(i), x5 => sum_L1(5)(i), x4 => sum_L1(4)(i),
                        x3 => sum_L1(3)(i), x2 => sum_L1(2)(i),  x1 => sum_L1(1)(i), x0 => sum_L1(0)(i),
                        s2 => sum_L2(2)((i+2) mod 16), s1 => sum_L2(1)((i+1) mod 16), s0 => sum_L2(0)(i) );     
                          
-    reduc2: reducer_7to3 port map( x6 => sum_L1(13)(i), x5 => sum_L1(12)(i), x4 => sum_L1(11)(i),
+    reduc2: reducer_7to3_i port map( x6 => sum_L1(13)(i), x5 => sum_L1(12)(i), x4 => sum_L1(11)(i),
                     x3 => sum_L1(10)(i), x2 => sum_L1(9)(i),  x1 => sum_L1(8)(i), x0 => sum_L1(7)(i),
                     s2 => sum_L2(5)((i+2) mod 16), s1 => sum_L2(4)((i+1) mod 16), s0 => sum_L2(3)(i) );                   
   end generate;
 
   L_3: for i in 0 to 15 generate 
-    reduc1: reducer_7to3 port map( x6 => sum_L1(14)(i), x5 => sum_L2(5)(i), x4 => sum_L2(4)(i),
+    reduc1: reducer_7to3_i port map( x6 => sum_L1(14)(i), x5 => sum_L2(5)(i), x4 => sum_L2(4)(i),
                        x3 => sum_L2(3)(i), x2 => sum_L2(2)(i),  x1 => sum_L2(1)(i), x0 => sum_L2(0)(i),
                        s2 => sum_L3(2)((i+2) mod 16), s1 => sum_L3(1)((i+1) mod 16), s0 => sum_L3(0)(i) );                       
   end generate;

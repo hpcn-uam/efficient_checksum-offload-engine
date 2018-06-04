@@ -7,13 +7,13 @@ use IEEE.std_logic_1164.all;
 use IEEE.std_logic_arith.all;
 use IEEE.std_logic_unsigned.all;
 
-entity reducer_6to3 is port (
+entity reducer_6to3_i is port (
   x5, x4, x3, x2, x1, x0: in std_logic;
   s2, s1, s0: out std_logic
 );
-end reducer_6to3 ;
+end reducer_6to3_i ;
 
-architecture rtl of reducer_6to3 is
+architecture rtl of reducer_6to3_i is
   type memrom is array (0 to 63) of STD_LOGIC;
   signal sum_0: memrom := x"6996_9669_9669_6996";
   signal sum_1: memrom := x"177E_7EE8_7EE8_E881";  
