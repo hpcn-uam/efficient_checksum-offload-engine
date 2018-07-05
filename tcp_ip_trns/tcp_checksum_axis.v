@@ -7,17 +7,14 @@
 //  Company       : HPCN-UAM
 //  Email         : mario.ruiz@uam.es
 //  Created On    : 2018-05-13 10:48:30
-//  Last Modified : 2018-06-02 18:23:07
+//  Last Modified : 2018-07-05 16:30:35
 //
 //  Revision      : 1.0
 //
 //  Description   :
 //==================================================================================================
 
-module tcp_checksum_axis #(
-  parameter integer VERIFY_KEEP = 1
-
-) (
+module tcp_checksum_axis (
 
   (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 clk CLK" *)
   (* X_INTERFACE_PARAMETER = "ASSOCIATED_BUSIF S_AXIS:M_AXIS, ASSOCIATED_RESET rst_n" *)
@@ -48,83 +45,72 @@ module tcp_checksum_axis #(
 
 
     wire [ 15:  0]              result_computation_i;
-    reg  [ 15:  0]              previous_computation;
+    reg  [ 15:  0]              previous_computation = 16'h0;
 
 
     /* Stage 0*/
     
-    reg [511:  0]               input_data_i;
-    wire                        input_valid;
+    reg [511:  0]               data_r;
+    reg                         valid_r;
+    reg                         ready_r;
+    reg                         last_r;
     integer                     i;
 
-    assign input_valid = S_AXIS_TVALID && S_AXIS_TREADY;
+    /* If the channel is busy clear s_ready*/
+    assign S_AXIS_TREADY = !M_AXIS_TVALID | M_AXIS_TREADY;
 
-    assign S_AXIS_TREADY = 1'b1/*M_AXIS_TREADY*/;
-
-
-    /* To assure that only the valid data is taken into account */
-    generate
-      if (VERIFY_KEEP == 1) begin
-        always @(*) begin
-            for (i = 0 ; i < 64 ; i=i+1) begin
-                if (S_AXIS_TKEEP[i]) begin
-                    input_data_i[i*8 +: 8] = S_AXIS_TDATA[i*8 +:8];
-                end
-                else begin
-                    input_data_i[i*8 +: 8] = 8'h0;
-                end
-            end
-        end
-      end
-      else begin
-        always @(*) begin
-          input_data_i = S_AXIS_TDATA;
-        end
-      end
-      
-    endgenerate
-
-
+    /* Register data in and verify keep signal to ensure that only the valid data is taken into account */
     always @(posedge clk) begin
-        if (~rst_n) begin
-            previous_computation <= 16'h0;                
+      for (i = 0 ; i < 64 ; i=i+1) begin
+        if (S_AXIS_TKEEP[i]) begin
+          data_r[i*8 +: 8] <= S_AXIS_TDATA[i*8 +:8];
         end
         else begin
-            if (S_AXIS_TVALID && S_AXIS_TREADY) begin
-                if (S_AXIS_TLAST) begin
-                    previous_computation <= 16'h0;                        
-                end
-                else begin
-                    previous_computation <= result_computation_i;
-                end
-            end
+          data_r[i*8 +: 8] <= 8'h0;
         end
+      end
+      valid_r   <= S_AXIS_TVALID;
+      ready_r   <= S_AXIS_TREADY;
+      last_r    <= S_AXIS_TLAST;
     end
 
-
+    /* Register the output of the checksum computation, that it is the current checksum
+       and clear it when the packet finishes*/
     always @(posedge clk) begin
-        if (~rst_n) begin
-            M_AXIS_TDATA    <= 16'h0;
-            M_AXIS_TVALID   <= 1'b0;
+      if (valid_r && ready_r) begin
+        if (last_r) begin
+          previous_computation <= 16'h0;                        
         end
         else begin
-            M_AXIS_TVALID <= M_AXIS_TVALID & !M_AXIS_TREADY; 
-            if (S_AXIS_TVALID && S_AXIS_TREADY && S_AXIS_TLAST) begin
-                M_AXIS_TDATA    <= ~result_computation_i;
-                M_AXIS_TVALID   <= 1'b1;
-            end
+          previous_computation <= result_computation_i;
         end
+      end
+    end
+
+    /* Write the checksum when a last is received, also keep valid set until the data is consumed*/
+    always @(posedge clk) begin
+      if (~rst_n) begin
+        M_AXIS_TDATA    <= 16'h0;
+        M_AXIS_TVALID   <= 1'b0;
+      end
+      else begin
+        M_AXIS_TVALID <= M_AXIS_TVALID & !M_AXIS_TREADY; 
+        if (valid_r && ready_r && last_r) begin
+          M_AXIS_TDATA    <= ~result_computation_i;
+          M_AXIS_TVALID   <= 1'b1;
+        end
+      end
     end
 
 
     cksum_528_r03 #(
-        .REGISTER_INPUT_DATA(0)
+      .REGISTER_INPUT_DATA(               0)
     )
     checksum_i ( 
-       .SysClk_in   (                    clk),
-       .PktData     (           input_data_i),
-       .pre_cks     (   previous_computation),
-       .ChksumFinal (   result_computation_i)
+      .SysClk_in   (                    clk),
+      .PktData     (                 data_r),
+      .pre_cks     (   previous_computation),
+      .ChksumFinal (   result_computation_i)
     );
 
 endmodule
